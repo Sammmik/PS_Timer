@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <!-- Přísná bezpečnostní politika (CSP): Zakazuje veškerou síťovou komunikaci, externí skripty, rámce i formuláře -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Časoměr pro tablet (Offline &amp; Zabezpečený)</title>
+    
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --bg-panel: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #334155;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --indigo: #6366f1;
+            --sky: #38bdf8;
+            --emerald: #10b981;
+            --amber: #f59e0b;
+            --rose: #f43f5e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            touch-action: manipulation;
+            transition: background-color 0.4s ease;
+        }
+
+        .mono-digits {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.03em;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Horní lišta */
+        .top-bar {
+            width: 100%;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.7);
+            background-color: rgba(15, 23, 42, 0.85);
+            z-index: 20;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+            flex-shrink: 0;
+        }
+
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.1rem;
+        }
+
+        .status-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: #64748b;
+            display: inline-block;
+        }
+
+        .status-dot.active {
+            background-color: var(--emerald);
+            box-shadow: 0 0 8px var(--emerald);
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.75rem;
+            border-radius: 0.75rem;
+            background-color: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s, background-color 0.15s;
+        }
+
+        .security-badge:active {
+            transform: scale(0.96);
+        }
+
+        .clock-pill {
+            padding: 0.45rem 0.8rem;
+            border-radius: 0.75rem;
+            background-color: var(--bg-card);
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-top {
+            padding: 0.5rem 0.85rem;
+            border-radius: 0.75rem;
+            background-color: var(--bg-card);
+            color: #e2e8f0;
+            font-weight: 600;
+            font-size: 0.82rem;
+            border: 1px solid var(--border-color);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: transform 0.12s, background-color 0.15s;
+        }
+
+        .btn-top:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .btn-top:active {
+            transform: scale(0.95);
+        }
+
+        /* Hlavní kontejner */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.25rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            overflow-y: auto;
+        }
+
+        /* 1. VÝBĚR ČASU */
+        .view-selection {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .section-header {
+            text-align: center;
+        }
+
+        .section-header h2 {
+            font-size: clamp(1.35rem, 3vw, 2rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.2rem;
+        }
+
+        /* Mřížka předvoleb */
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.85rem;
+            width: 100%;
+        }
+
+        @media (max-width: 900px) {
+            .presets-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 560px) {
+            .presets-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .preset-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+            border: 2px solid var(--border-color);
+            border-radius: 1.35rem;
+            padding: 1.1rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.12s, border-color 0.2s, box-shadow 0.2s;
+            min-height: 135px;
+            color: var(--text-main);
+        }
+
+        .preset-card:active {
+            transform: scale(0.95);
+        }
+
+        .preset-card.sky:hover { border-color: var(--sky); }
+        .preset-card.emerald:hover { border-color: var(--emerald); }
+        .preset-card.indigo:hover { border-color: var(--indigo); }
+        .preset-card.amber:hover { border-color: var(--amber); }
+        .preset-card.rose:hover { border-color: var(--rose); }
+
+        .preset-num {
+            font-size: clamp(2.1rem, 4.5vw, 3.2rem);
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .preset-unit {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            margin-top: 0.2rem;
+        }
+
+        .preset-pill {
+            margin-top: 0.55rem;
+            padding: 0.2rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .pill-sky { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .pill-emerald { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .pill-indigo { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
+        .pill-amber { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .pill-rose { background: rgba(244, 63, 94, 0.15); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+        /* Sekce pro vlastní čas v minutách */
+        .custom-time-box {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid var(--border-color);
+            border-radius: 1.35rem;
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .custom-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .custom-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .custom-Converted {
+            font-size: 0.85rem;
+            color: #a5b4fc;
+            font-weight: 700;
+        }
+
+        .custom-controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .step-buttons-group {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-step {
+            min-width: 3.3rem;
+            height: 3.3rem;
+            padding: 0 0.65rem;
+            border-radius: 0.9rem;
+            background-color: var(--bg-card);
+            border: 1px solid #475569;
+            color: var(--text-main);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.15s;
+        }
+
+        .btn-step:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .btn-step:active {
+            transform: scale(0.93);
+        }
+
+        .custom-display-trigger {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0.4rem;
+            background-color: #020617;
+            border: 2px solid var(--indigo);
+            border-radius: 1rem;
+            padding: 0.5rem 1.2rem;
+            min-width: 150px;
+            cursor: pointer;
+            transition: transform 0.12s, box-shadow 0.15s;
+        }
+
+        .custom-display-trigger:active {
+            transform: scale(0.97);
+        }
+
+        .custom-minutes-val {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #ffffff;
+        }
+
+        .custom-minutes-unit {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .btn-start-custom {
+            padding: 0.85rem 1.4rem;
+            border-radius: 1rem;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+            transition: transform 0.12s, filter 0.15s;
+            flex-grow: 1;
+            max-width: 260px;
+        }
+
+        .btn-start-custom:hover {
+            filter: brightness(1.08);
+        }
+
+        .btn-start-custom:active {
+            transform: scale(0.96);
+        }
+
+        .btn-test-5s {
+            padding: 0.55rem 1.1rem;
+            border-radius: 0.9rem;
+            background-color: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .btn-test-5s:hover {
+            color: var(--text-main);
+            border-color: #64748b;
+        }
+
+        /* 2. BĚŽÍCÍ ODPOČET */
+        .view-running {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+
+        .running-badges {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .info-pill {
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .paused-pill {
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            background-color: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            color: #fcd34d;
+            font-weight: 800;
+            font-size: 0.95rem;
+        }
+
+        .timer-center-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin: auto 0;
+        }
+
+        .timer-giant-text {
+            font-size: clamp(3.8rem, 15vw, 12.5rem);
+            font-weight: 900;
+            line-height: 1;
+            text-align: center;
+            color: #ffffff;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .timer-giant-text.warning {
+            color: var(--amber);
+        }
+
+        .remaining-sub {
+            color: var(--text-muted);
+            font-size: clamp(1rem, 2.2vw, 1.35rem);
+            font-weight: 600;
+            margin-top: 0.65rem;
+        }
+
+        .progress-track {
+            width: 100%;
+            max-width: 900px;
+            height: 1.35rem;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 0.2rem;
+            margin-top: 1.5rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--indigo), var(--sky), var(--emerald));
+            transition: width 0.25s linear;
+        }
+
+        .running-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            width: 100%;
+            max-width: 780px;
+        }
+
+        .btn-control {
+            padding: 1.15rem 1rem;
+            border-radius: 1.35rem;
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            background-color: var(--bg-panel);
+            color: var(--text-main);
+            transition: transform 0.12s, background-color 0.15s;
+        }
+
+        .btn-control:active {
+            transform: scale(0.95);
+        }
+
+        .btn-pause {
+            background-color: var(--amber);
+            border-color: var(--amber);
+            color: #020617;
+        }
+
+        .btn-resume {
+            background-color: var(--emerald);
+            border-color: var(--emerald);
+            color: #020617;
+        }
+
+        /* 3. KONEC ODPOČTU (ALARM) */
+        @keyframes alarmPulse {
+            0%, 100% {
+                background-color: #dc2626;
+                color: #ffffff;
+            }
+            50% {
+                background-color: #f59e0b;
+                color: #020617;
+            }
+        }
+
+        body.alarm-active-bg {
+            animation: alarmPulse 0.85s infinite ease-in-out;
+        }
+
+        @keyframes buttonBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.035); }
+        }
+
+        .view-finished {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 30;
+        }
+
+        .alarm-bell-circle {
+            width: 6rem;
+            height: 6rem;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.22);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .finished-title {
+            font-size: clamp(2.8rem, 8vw, 5.5rem);
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1.05;
+        }
+
+        .finished-sub {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-weight: 700;
+            margin-top: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn-stop-alarm {
+            animation: buttonBounce 0.9s infinite ease-in-out;
+            width: 100%;
+            max-width: 620px;
+            padding: 1.75rem 2rem;
+            border-radius: 1.75rem;
+            background-color: #020617;
+            color: #ffffff;
+            border: 4px solid #ffffff;
+            font-size: clamp(1.35rem, 3.5vw, 2.25rem);
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.85rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-repeat-alarm {
+            margin-top: 1.25rem;
+            padding: 0.9rem 1.75rem;
+            border-radius: 1rem;
+            background-color: rgba(0, 0, 0, 0.35);
+            color: #ffffff;
+            border: 2px solid rgba(255, 255, 255, 0.45);
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        /* Modální okna (Číselník pro vlastní čas + Bezpečnostní přehled) */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(2, 6, 23, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 50;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 440px;
+            background-color: var(--bg-panel);
+            border: 2px solid var(--border-color);
+            border-radius: 1.5rem;
+            padding: 1.35rem;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
+        }
+
+        .modal-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .modal-top h3 {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .btn-close-modal {
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 0.75rem;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .keypad-screen {
+            background-color: #020617;
+            border: 2px solid var(--indigo);
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            margin-bottom: 0.9rem;
+        }
+
+        .keypad-screen-val {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ffffff;
+        }
+
+        .keypad-screen-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+        }
+
+        .keypad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.6rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .btn-key {
+            height: 3.6rem;
+            border-radius: 0.9rem;
+            background-color: var(--bg-card);
+            border: 1px solid #475569;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-key:active {
+            transform: scale(0.94);
+            background-color: var(--bg-card-hover);
+        }
+
+        .btn-key.action {
+            background-color: rgba(244, 63, 94, 0.15);
+            color: #fda4af;
+            border-color: rgba(244, 63, 94, 0.35);
+            font-size: 1rem;
+        }
+
+        .security-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            margin-bottom: 1.1rem;
+        }
+
+        .security-list li {
+            padding: 0.65rem 0.8rem;
+            border-radius: 0.85rem;
+            background-color: rgba(30, 41, 59, 0.65);
+            border: 1px solid var(--border-color);
+        }
+
+        .security-list strong {
+            color: #6ee7b7;
+            display: block;
+            margin-bottom: 0.15rem;
+        }
+
+        /* Spodní lišta */
+        footer {
+            width: 100%;
+            padding: 0.55rem 1rem;
+            text-align: center;
+            font-size: 0.78rem;
+            color: #64748b;
+            border-top: 1px solid rgba(30, 41, 59, 0.8);
+        }
+
+        svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body id="app-body">
+
+    <!-- Horní lišta -->
+    <header id="top-bar" class="top-bar">
+        <div class="brand-group">
+            <div class="brand-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="brand-title">Časoměr</h1>
+                <div class="status-row">
+                    <span id="wake-lock-dot" class="status-dot"></span>
+                    <span id="wake-lock-text">Připraveno</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="top-actions">
+            <!-- Bezpečnostní štítek -->
+            <button type="button" id="security-info-btn" class="security-badge" title="Zobrazit informace o zabezpečení">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" style="width:1rem;height:1rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Zabezpečeno: 100% Offline / Blokována síť</span>
+            </button>
+
+            <!-- Hodiny -->
+            <div id="current-clock" class="clock-pill mono-digits">--:--</div>
+
+            <!-- Test zvuku -->
+            <button type="button" id="test-sound-btn" class="btn-top">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#818cf8" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+                <span>Zkusit zvuk</span>
+            </button>
+
+            <!-- Celá obrazovka -->
+            <button type="button" id="fullscreen-btn" class="btn-top">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#34d399" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+                <span id="fs-text">Celá obrazovka</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hlavní obsah -->
+    <main>
+
+        <!-- 1. OBRAZOVKA: VÝBĚR ČASU -->
+        <section id="view-selection" class="view-selection">
+            <div class="section-header">
+                <h2>Vyberte dobu odpočtu</h2>
+                <p>Klepnutím na předvolbu nebo spuštěním vlastního času zahájíte odpočítávání</p>
+            </div>
+
+            <!-- Hlavní předvolby: 60, 120, 180, 240, 300 min -->
+            <div class="presets-grid">
+                <button type="button" data-preset="60" class="preset-card sky">
+                    <span class="preset-num mono-digits">60</span>
+                    <span class="preset-unit">minut</span>
+                    <span class="preset-pill pill-sky">1 hodina</span>
+                </button>
+
+                <button type="button" data-preset="120" class="preset-card emerald">
+                    <span class="preset-num mono-digits">120</span>
+                    <span class="preset-unit">minut</span>
+                    <span class="preset-pill pill-emerald">2 hodiny</span>
+                </button>
+
+                <button type="button" data-preset="180" class="preset-card indigo">
+                    <span class="preset-num mono-digits">180</span>
+                    <span class="preset-unit">minut</span>
+                    <span class="preset-pill pill-indigo">3 hodiny</span>
+                </button>
+
+                <button type="button" data-preset="240" class="preset-card amber">
+                    <span class="preset-num mono-digits">240</span>
+                    <span class="preset-unit">minut</span>
+                    <span class="preset-pill pill-amber">4 hodiny</span>
+                </button>
+
+                <button type="button" data-preset="300" class="preset-card rose">
+                    <span class="preset-num mono-digits">300</span>
+                    <span class="preset-unit">minut</span>
+                    <span class="preset-pill pill-rose">5 hodin</span>
+                </button>
+            </div>
+
+            <!-- Vlastní čas v minutách -->
+            <div class="custom-time-box">
+                <div class="custom-header">
+                    <div class="custom-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#818cf8" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Vlastní čas (v minutách, 1–1440 min)</span>
+                    </div>
+                    <span id="custom-converted-label" class="custom-Converted">0 hod 45 min</span>
+                </div>
+
+                <div class="custom-controls-row">
+                    <!-- Tlačítka pro rychlou úpravu -->
+                    <div class="step-buttons-group">
+                        <button type="button" data-step="-10" class="btn-step mono-digits">-10</button>
+                        <button type="button" data-step="-5" class="btn-step mono-digits">-5</button>
+                        <button type="button" data-step="-1" class="btn-step mono-digits">-1</button>
+
+                        <!-- Klepnutím se otevře velký číselník pro přímé zadání -->
+                        <button type="button" id="open-keypad-btn" class="custom-display-trigger" title="Klepněte pro zadání číselníkem">
+                            <span id="custom-minutes-display" class="custom-minutes-val mono-digits">45</span>
+                            <span class="custom-minutes-unit">min ✎</span>
+                        </button>
+
+                        <button type="button" data-step="1" class="btn-step mono-digits">+1</button>
+                        <button type="button" data-step="5" class="btn-step mono-digits">+5</button>
+                        <button type="button" data-step="10" class="btn-step mono-digits">+10</button>
+                    </div>
+
+                    <!-- Spustit vlastní čas -->
+                    <button type="button" id="start-custom-btn" class="btn-start-custom">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Spustit vlastní čas</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Rychlý 5s test -->
+            <button type="button" id="test-5s-btn" class="btn-test-5s">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#fbbf24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Rychlý test alarmu a zbarvení displeje (5 sekund)</span>
+            </button>
+        </section>
+
+        <!-- 2. OBRAZOVKA: BĚŽÍCÍ ODPOČET -->
+        <section id="view-running" class="view-running hidden">
+            <div class="running-badges">
+                <div class="info-pill">
+                    <span>Nastaveno:</span>
+                    <strong id="selected-preset-label" style="color:#fff;">60 min</strong>
+                </div>
+                <div class="info-pill">
+                    <span>Konec v:</span>
+                    <strong id="end-time-label" class="mono-digits" style="color:#818cf8;">--:--</strong>
+                </div>
+                <div id="paused-badge" class="paused-pill hidden">POZASTAVENO</div>
+            </div>
+
+            <div class="timer-center-box">
+                <div id="countdown-display" class="timer-giant-text mono-digits">01:00:00</div>
+                <div id="remaining-minutes-sub" class="remaining-sub">Zbývá 60 minut</div>
+
+                <div class="progress-track">
+                    <div id="progress-bar" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="running-controls">
+                <button type="button" id="cancel-timer-btn" class="btn-control">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#fb7185" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Zrušit</span>
+                </button>
+
+                <button type="button" id="pause-resume-btn" class="btn-control btn-pause">
+                    <span id="pause-btn-text">Pozastavit</span>
+                </button>
+
+                <button type="button" id="add-5m-btn" class="btn-control">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#34d399" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span>+5 min</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 3. OBRAZOVKA: KONEC ODPOČTU (ALARM A ZBARVENÍ DISPLEJE) -->
+        <section id="view-finished" class="view-finished hidden">
+            <div class="alarm-bell-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="width:3.5rem;height:3.5rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+            </div>
+
+            <h2 class="finished-title">ČAS VYPRŠEL!</h2>
+            <p id="finished-subtitle" class="finished-sub">Odpočet byl dokončen</p>
+
+            <button type="button" id="stop-alarm-btn" class="btn-stop-alarm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#34d399" stroke-width="3" style="width:2.2rem;height:2.2rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>VYPNOUT ALARM / HOTOVO</span>
+            </button>
+
+            <button type="button" id="repeat-same-btn" class="btn-repeat-alarm">
+                Spustit znovu stejný čas
+            </button>
+        </section>
+
+    </main>
+
+    <!-- MODÁLNÍ OKNO 1: ČÍSELNÍK PRO VLASTNÍ ČAS -->
+    <div id="keypad-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-top">
+                <h3>Zadejte vlastní čas (minuty)</h3>
+                <button type="button" id="close-keypad-btn" class="btn-close-modal">✕</button>
+            </div>
+
+            <div class="keypad-screen">
+                <div id="keypad-value" class="keypad-screen-val mono-digits">45</div>
+                <div class="keypad-screen-hint">Povolený rozsah: 1 až 1440 minut (24 hodin)</div>
+            </div>
+
+            <div class="keypad-grid">
+                <button type="button" data-digit="1" class="btn-key mono-digits">1</button>
+                <button type="button" data-digit="2" class="btn-key mono-digits">2</button>
+                <button type="button" data-digit="3" class="btn-key mono-digits">3</button>
+                <button type="button" data-digit="4" class="btn-key mono-digits">4</button>
+                <button type="button" data-digit="5" class="btn-key mono-digits">5</button>
+                <button type="button" data-digit="6" class="btn-key mono-digits">6</button>
+                <button type="button" data-digit="7" class="btn-key mono-digits">7</button>
+                <button type="button" data-digit="8" class="btn-key mono-digits">8</button>
+                <button type="button" data-digit="9" class="btn-key mono-digits">9</button>
+                <button type="button" id="keypad-clear" class="btn-key action">Smazat</button>
+                <button type="button" data-digit="0" class="btn-key mono-digits">0</button>
+                <button type="button" id="keypad-backspace" class="btn-key action">⌫</button>
+            </div>
+
+            <div style="display:flex;gap:0.6rem;">
+                <button type="button" id="keypad-confirm-only" class="btn-top" style="flex:1;justify-content:center;padding:0.9rem;">
+                    Uložit hodnotu
+                </button>
+                <button type="button" id="keypad-confirm-start" class="btn-start-custom" style="flex:1;max-width:none;padding:0.9rem;">
+                    Rovnou spustit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODÁLNÍ OKNO 2: INFORMACE O ZABEZPEČENÍ -->
+    <div id="security-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-top">
+                <h3>Zabezpečení a síťová izolace</h3>
+                <button type="button" id="close-security-btn" class="btn-close-modal">✕</button>
+            </div>
+
+            <ul class="security-list">
+                <li>
+                    <strong>1. Hardwarová / Prohlížečová CSP izolace</strong>
+                    Hlavička <code>Content-Security-Policy: default-src 'none'; connect-src 'none'</code> na úrovni jádra prohlížeče zakazuje jakékoliv odchozí i příchozí připojení k internetu.
+                </li>
+                <li>
+                    <strong>2. Nulové externí závislosti (100% Offline)</strong>
+                    Aplikace nenačítá žádné externí skripty, fonty ani obrázky. Veškerý kód i zvukový syntezátor běží lokálně v paměti tabletu.
+                </li>
+                <li>
+                    <strong>3. Uzamčená síťová API (Defense-in-Depth)</strong>
+                    Rozhraní <code>fetch</code>, <code>XMLHttpRequest</code>, <code>WebSocket</code>, <code>EventSource</code>, <code>sendBeacon</code> i <code>RTCPeerConnection</code> byla při startu trvale zneplatněna a zamknuta.
+                </li>
+            </ul>
+
+            <button type="button" id="ok-security-btn" class="btn-start-custom" style="width:100%;max-width:none;">
+                Rozumím
+            </button>
+        </div>
+    </div>
+
+    <footer id="bottom-bar">
+        100% Offline Časoměr pro tablet • Žádná síťová komunikace • Zvukový a vizuální alarm
+    </footer>
+
+    <script>
+        "use strict";
+
+        // ============================================================================
+        // 1. BEZPEČNOSTNÍ UZAMČENÍ SÍŤOVÝCH ROZHRANÍ (Zákaz využití jako prostředníka)
+        // ============================================================================
+        (function lockDownNetworkAPIs() {
+            const blockedApis = [
+                'fetch',
+                'XMLHttpRequest',
+                'WebSocket',
+                'EventSource',
+                'RTCPeerConnection',
+                'webkitRTCPeerConnection',
+                'Worker',
+                'SharedWorker'
+            ];
+
+            const denyNetworkAccess = function() {
+                throw new Error('Síťová komunikace je v této aplikaci z bezpečnostních důvodů trvale zakázána.');
+            };
+
+            blockedApis.forEach(function(apiName) {
+                try {
+                    Object.defineProperty(window, apiName, {
+                        value: denyNetworkAccess,
+                        writable: false,
+                        configurable: false
+                    });
+                } catch (e) {}
+            });
+
+            try {
+                if (navigator && 'sendBeacon' in navigator) {
+                    Object.defineProperty(navigator, 'sendBeacon', {
+                        value: denyNetworkAccess,
+                        writable: false,
+                        configurable: false
+                    });
+                }
+            } catch (e) {}
+        })();
+
+        // ============================================================================
+        // 2. STAVOVÉ PROMĚNNÉ A SANITIZACE VSTUPŮ
+        // ============================================================================
+        const MIN_CUSTOM_MINUTES = 1;
+        const MAX_CUSTOM_MINUTES = 1440; // max 24 hodin
+
+        let customMinutes = 45;
+        let keypadBuffer = "45";
+
+        let timerInterval = null;
+        let alarmInterval = null;
+        let totalDurationMs = 0;
+        let remainingMs = 0;
+        let targetTimestamp = null;
+        let isPaused = false;
+        let lastRunSeconds = 3600;
+        let lastRunLabel = "60 min (1 hodina)";
+
+        let audioCtx = null;
+        let wakeLock = null;
+
+        function clampMinutes(val) {
+            const parsed = parseInt(String(val), 10);
+            if (Number.isNaN(parsed)) return MIN_CUSTOM_MINUTES;
+            if (parsed < MIN_CUSTOM_MINUTES) return MIN_CUSTOM_MINUTES;
+            if (parsed > MAX_CUSTOM_MINUTES) return MAX_CUSTOM_MINUTES;
+            return parsed;
+        }
+
+        function formatMinutesDescription(mins) {
+            const safeMins = clampMinutes(mins);
+            const h = Math.floor(safeMins / 60);
+            const m = safeMins % 60;
+            if (h === 0) {
+                return safeMins + " min";
+            }
+            let hWord = "hodin";
+            if (h === 1) hWord = "hodina";
+            else if (h >= 2 && h <= 4) hWord = "hodiny";
+
+            if (m === 0) {
+                return safeMins + " min (" + h + " " + hWord + ")";
+            }
+            return safeMins + " min (" + h + " hod " + m + " min)";
+        }
+
+        // ============================================================================
+        // 3. DOM ELEMENTY
+        // ============================================================================
+        const appBody = document.getElementById('app-body');
+        const bottomBar = document.getElementById('bottom-bar');
+
+        const viewSelection = document.getElementById('view-selection');
+        const viewRunning = document.getElementById('view-running');
+        const viewFinished = document.getElementById('view-finished');
+
+        const customMinutesDisplay = document.getElementById('custom-minutes-display');
+        const customConvertedLabel = document.getElementById('custom-converted-label');
+
+        const countdownDisplay = document.getElementById('countdown-display');
+        const remainingMinutesSub = document.getElementById('remaining-minutes-sub');
+        const progressBar = document.getElementById('progress-bar');
+        const selectedPresetLabel = document.getElementById('selected-preset-label');
+        const endTimeLabel = document.getElementById('end-time-label');
+        const pausedBadge = document.getElementById('paused-badge');
+        const pauseResumeBtn = document.getElementById('pause-resume-btn');
+        const pauseBtnText = document.getElementById('pause-btn-text');
+        const finishedSubtitle = document.getElementById('finished-subtitle');
+
+        const wakeLockDot = document.getElementById('wake-lock-dot');
+        const wakeLockText = document.getElementById('wake-lock-text');
+
+        const keypadModal = document.getElementById('keypad-modal');
+        const keypadValueEl = document.getElementById('keypad-value');
+        const securityModal = document.getElementById('security-modal');
+
+        // ============================================================================
+        // 4. WEB AUDIO API SYNTEZÁTOR (Lokální generování zvuku bez externích souborů)
+        // ============================================================================
+        function ensureAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioCtx = new AudioContextClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTestBeep() {
+            ensureAudioContext();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(660, now);
+            osc.frequency.setValueAtTime(880, now + 0.11);
+
+            gain.gain.setValueAtTime(0.01, now);
+            gain.gain.exponentialRampToValueAtTime(0.25, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(now);
+            osc.stop(now + 0.30);
+        }
+
+        function playAlarmSequence() {
+            ensureAudioContext();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const frequencies = [880, 1174.66, 1318.51, 1760];
+
+            frequencies.forEach(function(freq, index) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now + index * 0.11);
+
+                gain.gain.setValueAtTime(0.001, now + index * 0.11);
+                gain.gain.exponentialRampToValueAtTime(0.38, now + index * 0.11 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.11 + 0.22);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now + index * 0.11);
+                osc.stop(now + index * 0.11 + 0.24);
+            });
+        }
+
+        // ============================================================================
+        // 5. ZÁMEK OBRAZOVKY (Wake Lock API)
+        // ============================================================================
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator && navigator.wakeLock) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    updateWakeLockUI(true);
+                    wakeLock.addEventListener('release', function() {
+                        updateWakeLockUI(false);
+                    });
+                } catch (err) {
+                    updateWakeLockUI(false);
+                }
+            } else {
+                wakeLockText.textContent = 'Režim tabletu aktivní';
+            }
+        }
+
+        async function releaseWakeLock() {
+            if (wakeLock !== null) {
+                try {
+                    await wakeLock.release();
+                    wakeLock = null;
+                } catch (e) {}
+            }
+            updateWakeLockUI(false);
+        }
+
+        function updateWakeLockUI(active) {
+            if (active) {
+                wakeLockDot.className = 'status-dot active';
+                wakeLockText.textContent = 'Displej nezhasne (Wake Lock)';
+            } else {
+                wakeLockDot.className = 'status-dot';
+                wakeLockText.textContent = 'Připraveno';
+            }
+        }
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible' && timerInterval !== null && !isPaused) {
+                requestWakeLock();
+            }
+        });
+
+        // ============================================================================
+        // 6. VLASTNÍ ČAS A ČÍSELNÍK
+        // ============================================================================
+        function updateCustomTimeUI() {
+            customMinutes = clampMinutes(customMinutes);
+            customMinutesDisplay.textContent = String(customMinutes);
+            customConvertedLabel.textContent = formatMinutesDescription(customMinutes);
+        }
+
+        function adjustCustomMinutes(delta) {
+            playTestBeep();
+            customMinutes = clampMinutes(customMinutes + delta);
+            updateCustomTimeUI();
+        }
+
+        function openKeypadModal() {
+            playTestBeep();
+            keypadBuffer = "";
+            keypadValueEl.textContent = String(customMinutes);
+            keypadModal.classList.remove('hidden');
+        }
+
+        function closeKeypadModal() {
+            keypadModal.classList.add('hidden');
+        }
+
+        function handleKeypadDigit(digitStr) {
+            playTestBeep();
+            const nextStr = (keypadBuffer + digitStr).replace(/^0+/, '');
+            if (nextStr.length === 0) {
+                keypadBuffer = "";
+                keypadValueEl.textContent = "1";
+                return;
+            }
+            const numeric = parseInt(nextStr, 10);
+            if (numeric > MAX_CUSTOM_MINUTES) {
+                keypadBuffer = String(MAX_CUSTOM_MINUTES);
+            } else {
+                keypadBuffer = String(numeric);
+            }
+            keypadValueEl.textContent = keypadBuffer;
+        }
+
+        // ============================================================================
+        // 7. LOGIKA ODPOČTU A ALARMU
+        // ============================================================================
+        function startTimerMinutes(mins) {
+            const safeMins = clampMinutes(mins);
+            const label = formatMinutesDescription(safeMins);
+            startTimerSeconds(safeMins * 60, label);
+        }
+
+        function startTimerSeconds(seconds, labelText) {
+            playTestBeep();
+            requestWakeLock();
+
+            clearInterval(timerInterval);
+            clearInterval(alarmInterval);
+
+            lastRunSeconds = seconds;
+            lastRunLabel = labelText;
+
+            totalDurationMs = seconds * 1000;
+            remainingMs = totalDurationMs;
+            targetTimestamp = Date.now() + remainingMs;
+            isPaused = false;
+
+            selectedPresetLabel.textContent = labelText;
+            finishedSubtitle.textContent = "Odpočet (" + labelText + ") byl dokončen";
+
+            updateEndTimeLabel();
+            updatePauseButtonUI();
+
+            appBody.classList.remove('alarm-active-bg');
+            bottomBar.classList.remove('hidden');
+
+            viewSelection.classList.add('hidden');
+            viewFinished.classList.add('hidden');
+            viewRunning.classList.remove('hidden');
+
+            renderCountdown();
+
+            timerInterval = setInterval(function() {
+                if (!isPaused) {
+                    const now = Date.now();
+                    remainingMs = Math.max(0, targetTimestamp - now);
+                    renderCountdown();
+
+                    if (remainingMs <= 0) {
+                        triggerAlarmState();
+                    }
+                }
+            }, 200);
+        }
+
+        function renderCountdown() {
+            const totalSeconds = Math.ceil(remainingMs / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            const formatted = [
+                String(hours).padStart(2, '0'),
+                String(minutes).padStart(2, '0'),
+                String(seconds).padStart(2, '0')
+            ].join(':');
+
+            countdownDisplay.textContent = formatted;
+
+            const totalMinutesLeft = Math.ceil(totalSeconds / 60);
+            if (totalSeconds > 60) {
+                remainingMinutesSub.textContent = "Zbývá přibližně " + totalMinutesLeft + " min";
+            } else {
+                remainingMinutesSub.textContent = "Poslední sekundy odpočtu (" + totalSeconds + " s)";
+            }
+
+            const pct = totalDurationMs > 0 ? Math.max(0, Math.min(100, (remainingMs / totalDurationMs) * 100)) : 0;
+            progressBar.style.width = pct + "%";
+
+            if (totalSeconds <= 60 && totalSeconds > 0) {
+                countdownDisplay.className = 'timer-giant-text warning mono-digits';
+            } else {
+                countdownDisplay.className = 'timer-giant-text mono-digits';
+            }
+        }
+
+        function updateEndTimeLabel() {
+            if (!targetTimestamp) return;
+            const endDate = new Date(targetTimestamp);
+            const hh = String(endDate.getHours()).padStart(2, '0');
+            const mm = String(endDate.getMinutes()).padStart(2, '0');
+            endTimeLabel.textContent = hh + ":" + mm;
+        }
+
+        function togglePause() {
+            ensureAudioContext();
+            if (isPaused) {
+                isPaused = false;
+                targetTimestamp = Date.now() + remainingMs;
+                updateEndTimeLabel();
+                requestWakeLock();
+            } else {
+                isPaused = true;
+                remainingMs = Math.max(0, targetTimestamp - Date.now());
+            }
+            updatePauseButtonUI();
+        }
+
+        function updatePauseButtonUI() {
+            if (isPaused) {
+                pausedBadge.classList.remove('hidden');
+                pauseBtnText.textContent = 'Pokračovat';
+                pauseResumeBtn.className = 'btn-control btn-resume';
+                endTimeLabel.textContent = 'Pozastaveno';
+            } else {
+                pausedBadge.classList.add('hidden');
+                pauseBtnText.textContent = 'Pozastavit';
+                pauseResumeBtn.className = 'btn-control btn-pause';
+            }
+        }
+
+        function addMinutesToRunning(mins) {
+            playTestBeep();
+            const addMs = mins * 60 * 1000;
+            totalDurationMs += addMs;
+            remainingMs += addMs;
+            if (!isPaused) {
+                targetTimestamp += addMs;
+                updateEndTimeLabel();
+            }
+            renderCountdown();
+        }
+
+        function triggerAlarmState() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+
+            viewRunning.classList.add('hidden');
+            viewFinished.classList.remove('hidden');
+
+            appBody.classList.add('alarm-active-bg');
+            bottomBar.classList.add('hidden');
+
+            playAlarmSequence();
+            alarmInterval = setInterval(function() {
+                playAlarmSequence();
+            }, 1200);
+        }
+
+        function resetToSelection() {
+            clearInterval(timerInterval);
+            clearInterval(alarmInterval);
+            timerInterval = null;
+            alarmInterval = null;
+            releaseWakeLock();
+
+            appBody.classList.remove('alarm-active-bg');
+            bottomBar.classList.remove('hidden');
+
+            viewRunning.classList.add('hidden');
+            viewFinished.classList.add('hidden');
+            viewSelection.classList.remove('hidden');
+        }
+
+        function toggleFullScreen() {
+            const docEl = document.documentElement;
+            const fsText = document.getElementById('fs-text');
+
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (docEl.requestFullscreen) {
+                    docEl.requestFullscreen();
+                } else if (docEl.webkitRequestFullscreen) {
+                    docEl.webkitRequestFullscreen();
+                }
+                fsText.textContent = 'Ukončit celou obrazovku';
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                fsText.textContent = 'Celá obrazovka';
+            }
+        }
+
+        // ============================================================================
+        // 8. NAVÁZÁNÍ UDÁLOSTÍ (Bez inline handlerů pro čistou bezpečnostní architekturu)
+        // ============================================================================
+        document.querySelectorAll('[data-preset]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const mins = clampMinutes(btn.getAttribute('data-preset'));
+                startTimerMinutes(mins);
+            });
+        });
+
+        document.querySelectorAll('[data-step]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const step = parseInt(btn.getAttribute('data-step'), 10);
+                if (!Number.isNaN(step)) {
+                    adjustCustomMinutes(step);
+                }
+            });
+        });
+
+        document.getElementById('open-keypad-btn').addEventListener('click', openKeypadModal);
+        document.getElementById('close-keypad-btn').addEventListener('click', closeKeypadModal);
+
+        document.querySelectorAll('[data-digit]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const d = btn.getAttribute('data-digit');
+                handleKeypadDigit(d);
+            });
+        });
+
+        document.getElementById('keypad-clear').addEventListener('click', function() {
+            playTestBeep();
+            keypadBuffer = "";
+            keypadValueEl.textContent = "1";
+        });
+
+        document.getElementById('keypad-backspace').addEventListener('click', function() {
+            playTestBeep();
+            keypadBuffer = keypadBuffer.slice(0, -1);
+            keypadValueEl.textContent = keypadBuffer.length > 0 ? keypadBuffer : "1";
+        });
+
+        document.getElementById('keypad-confirm-only').addEventListener('click', function() {
+            playTestBeep();
+            const val = keypadBuffer.length > 0 ? clampMinutes(keypadBuffer) : customMinutes;
+            customMinutes = val;
+            updateCustomTimeUI();
+            closeKeypadModal();
+        });
+
+        document.getElementById('keypad-confirm-start').addEventListener('click', function() {
+            const val = keypadBuffer.length > 0 ? clampMinutes(keypadBuffer) : customMinutes;
+            customMinutes = val;
+            updateCustomTimeUI();
+            closeKeypadModal();
+            startTimerMinutes(customMinutes);
+        });
+
+        document.getElementById('start-custom-btn').addEventListener('click', function() {
+            startTimerMinutes(customMinutes);
+        });
+
+        document.getElementById('test-5s-btn').addEventListener('click', function() {
+            startTimerSeconds(5, "Test (5 sekund)");
+        });
+
+        document.getElementById('test-sound-btn').addEventListener('click', playTestBeep);
+        document.getElementById('fullscreen-btn').addEventListener('click', toggleFullScreen);
+
+        document.getElementById('cancel-timer-btn').addEventListener('click', resetToSelection);
+        document.getElementById('pause-resume-btn').addEventListener('click', togglePause);
+        document.getElementById('add-5m-btn').addEventListener('click', function() {
+            addMinutesToRunning(5);
+        });
+
+        document.getElementById('stop-alarm-btn').addEventListener('click', resetToSelection);
+        document.getElementById('repeat-same-btn').addEventListener('click', function() {
+            startTimerSeconds(lastRunSeconds, lastRunLabel);
+        });
+
+        // Bezpečnostní modální okno
+        document.getElementById('security-info-btn').addEventListener('click', function() {
+            securityModal.classList.remove('hidden');
+        });
+        document.getElementById('close-security-btn').addEventListener('click', function() {
+            securityModal.classList.add('hidden');
+        });
+        document.getElementById('ok-security-btn').addEventListener('click', function() {
+            securityModal.classList.add('hidden');
+        });
+
+        // Hodiny v horní liště
+        function updateClock() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('current-clock').textContent = hh + ":" + mm;
+        }
+
+        updateCustomTimeUI();
+        updateClock();
+        setInterval(updateClock, 10000);
+    </script>
+</body>
+</html>
