@@ -4,8 +4,8 @@
   "display": "standalone",
   "name": "Playstation Timer",
   "orientation": "any",
-  "scope": "/",
+  "scope": "./",
   "short_name": "Playstation Timer",
-  "start_url": "/",
+  "start_url": "./index.html",
   "theme_color": "#5209c1"
 }
