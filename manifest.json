@@ -1,6 +1,6 @@
 {
-"name": "Časoměr",
-"short_name": "Časoměr",
+"name": "Timer",
+"short_name": "Timer",
 "start_url": "./",
 "display": "standalone",
 "background_color": "#0f172a",
