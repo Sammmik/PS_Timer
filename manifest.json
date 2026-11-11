@@ -4,8 +4,8 @@
   "display": "standalone",
   "name": "sammmik.github",
   "orientation": "any",
-  "scope": "/",
+  "scope": "./",
   "short_name": "sammmik.github",
-  "start_url": "/",
+  "start_url": "./index.html",
   "theme_color": "#ffffff"
 }
